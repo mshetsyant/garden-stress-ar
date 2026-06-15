@@ -57,6 +57,57 @@
             display: block;
         }
 
+        #labels-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .point-label {
+            position: absolute;
+            background: rgba(20, 20, 20, 0.95);
+            border: 1px solid #ff4444;
+            border-radius: 6px;
+            padding: 8px 10px;
+            color: #ff6666;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            animation: pulse 2s ease-in-out infinite;
+            box-shadow: 0 0 12px rgba(255, 68, 68, 0.4);
+        }
+
+        .point-label.hidden {
+            display: none;
+        }
+
+        .label-name {
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .label-ndre {
+            display: block;
+            color: #ff8888;
+            font-size: 10px;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 0.7;
+                text-shadow: 0 0 8px rgba(255, 68, 68, 0.6);
+            }
+            50% {
+                opacity: 1;
+                text-shadow: 0 0 16px rgba(255, 68, 68, 1);
+            }
+        }
+
         model-viewer {
             display: none;
         }
@@ -226,6 +277,11 @@
                 padding: 10px 14px;
                 font-size: 12px;
             }
+
+            .point-label {
+                font-size: 10px;
+                padding: 6px 8px;
+            }
         }
     </style>
 </head>
@@ -233,13 +289,13 @@
     <div class="container">
         <div class="header">
             <h1>Garden Stress Monitor</h1>
-            <p>Click a point to see plant data</p>
+            <p>Red pulsing points show plant health • Click to inspect</p>
         </div>
 
         <div class="viewer-wrapper">
             <div class="hint">
                 <strong>12 monitoring points</strong><br>
-                Click to inspect each location
+                Red = stressed | Click to see details
             </div>
 
             <div class="stats">
@@ -258,6 +314,7 @@
             </div>
 
             <canvas id="canvas"></canvas>
+            <div id="labels-container"></div>
 
             <div id="popup" class="info-popup hidden">
                 <div class="popup-header" id="popup-id">Point 01</div>
@@ -293,7 +350,23 @@
 
     <script>
         let scene, camera, renderer, mesh, raycaster, mouse;
-        let popup, pointsData = [];
+        let popup, pointsData = [], labelElements = [];
+
+        // Point data with names and NDRE values
+        const POINTS = [
+            { id: 1, x: 1.0, y: 1.0, z: 0.5, ndre: 0.52, name: 'NW Corner' },
+            { id: 2, x: 2.5, y: 2.0, z: 0.5, ndre: 0.48, name: 'W Ridge' },
+            { id: 3, x: 4.0, y: 1.5, z: 0.5, ndre: 0.55, name: 'C-North' },
+            { id: 4, x: 5.0, y: 5.0, z: 0.5, ndre: 0.18, name: 'Central' },
+            { id: 5, x: 6.5, y: 3.0, z: 0.5, ndre: 0.51, name: 'E Path' },
+            { id: 6, x: 8.0, y: 7.0, z: 0.5, ndre: 0.49, name: 'NE Zone' },
+            { id: 7, x: 9.0, y: 8.5, z: 0.5, ndre: 0.54, name: 'Far Corner' },
+            { id: 8, x: 1.5, y: 7.5, z: 0.5, ndre: 0.50, name: 'SW' },
+            { id: 9, x: 3.0, y: 8.0, z: 0.5, ndre: 0.53, name: 'S Edge' },
+            { id: 10, x: 5.5, y: 9.0, z: 0.5, ndre: 0.15, name: 'S Central' },
+            { id: 11, x: 7.5, y: 5.5, z: 0.5, ndre: 0.47, name: 'E Ridge' },
+            { id: 12, x: 8.5, y: 2.5, z: 0.5, ndre: 0.56, name: 'Far East' }
+        ];
 
         function init() {
             const canvas = document.getElementById('canvas');
@@ -324,7 +397,14 @@
             const loader = new THREE.GLTFLoader();
             loader.load('pointcloud.glb', (gltf) => {
                 mesh = gltf.scene;
+                // Make all meshes red
+                mesh.traverse((child) => {
+                    if (child.isMesh) {
+                        child.material = new THREE.MeshPhongMaterial({ color: 0xff4444 });
+                    }
+                });
                 scene.add(mesh);
+                createLabels();
                 animate();
             });
 
@@ -333,21 +413,50 @@
             canvas.addEventListener('mousemove', onMouseMove);
             window.addEventListener('resize', onWindowResize);
 
-            // Store point data
-            pointsData = [
-                { id: 1, x: 1.0, y: 1.0, ndre: 0.52, name: 'North-West Corner' },
-                { id: 2, x: 2.5, y: 2.0, ndre: 0.48, name: 'West Ridge' },
-                { id: 3, x: 4.0, y: 1.5, ndre: 0.55, name: 'Center-North' },
-                { id: 4, x: 5.0, y: 5.0, ndre: 0.18, name: 'Central Zone' },
-                { id: 5, x: 6.5, y: 3.0, ndre: 0.51, name: 'East Path' },
-                { id: 6, x: 8.0, y: 7.0, ndre: 0.49, name: 'North-East' },
-                { id: 7, x: 9.0, y: 8.5, ndre: 0.54, name: 'Far Corner' },
-                { id: 8, x: 1.5, y: 7.5, ndre: 0.50, name: 'South-West' },
-                { id: 9, x: 3.0, y: 8.0, ndre: 0.53, name: 'South Edge' },
-                { id: 10, x: 5.5, y: 9.0, ndre: 0.15, name: 'South Central' },
-                { id: 11, x: 7.5, y: 5.5, ndre: 0.47, name: 'East Ridge' },
-                { id: 12, x: 8.5, y: 2.5, ndre: 0.56, name: 'Far East' }
-            ];
+            pointsData = POINTS;
+        }
+
+        function createLabels() {
+            const labelsContainer = document.getElementById('labels-container');
+            const canvas = document.getElementById('canvas');
+
+            POINTS.forEach((point, idx) => {
+                const label = document.createElement('div');
+                label.className = 'point-label';
+                label.innerHTML = `
+                    <span class="label-name">${point.name}</span>
+                    <span class="label-ndre">NDRE: ${point.ndre.toFixed(2)}</span>
+                `;
+                label.style.animationDelay = `${idx * 0.1}s`;
+                labelsContainer.appendChild(label);
+                labelElements.push({ element: label, point });
+            });
+
+            // Position labels on first render
+            updateLabelPositions();
+        }
+
+        function updateLabelPositions() {
+            const canvas = document.getElementById('canvas');
+            const width = canvas.clientWidth;
+            const height = canvas.clientHeight;
+
+            labelElements.forEach(({ element, point }) => {
+                const vector = new THREE.Vector3(point.x, point.z + 0.3, point.y);
+                vector.project(camera);
+
+                const x = (vector.x * 0.5 + 0.5) * width;
+                const y = (-vector.y * 0.5 + 0.5) * height;
+
+                element.style.left = x + 'px';
+                element.style.top = y + 'px';
+
+                if (vector.z > 1) {
+                    element.classList.add('hidden');
+                } else {
+                    element.classList.remove('hidden');
+                }
+            });
         }
 
         function onCanvasClick(event) {
@@ -429,9 +538,12 @@
 
         function animate() {
             requestAnimationFrame(animate);
+
             if (mesh) {
                 mesh.rotation.z += 0.0003;
             }
+
+            updateLabelPositions();
             renderer.render(scene, camera);
         }
 
