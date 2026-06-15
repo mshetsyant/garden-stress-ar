@@ -69,7 +69,7 @@
         .point-label {
             position: absolute;
             background: rgba(20, 20, 20, 0.95);
-            border: 1px solid #ff4444;
+            border: 2px solid #ff3333;
             border-radius: 6px;
             padding: 8px 10px;
             color: #ff6666;
@@ -79,7 +79,7 @@
             transform: translate(-50%, -50%);
             pointer-events: none;
             animation: pulse 2s ease-in-out infinite;
-            box-shadow: 0 0 12px rgba(255, 68, 68, 0.4);
+            box-shadow: 0 0 12px rgba(255, 51, 51, 0.5);
         }
 
         .point-label.hidden {
@@ -99,12 +99,12 @@
 
         @keyframes pulse {
             0%, 100% {
-                opacity: 0.7;
-                text-shadow: 0 0 8px rgba(255, 68, 68, 0.6);
+                opacity: 0.6;
+                text-shadow: 0 0 8px rgba(255, 51, 51, 0.6);
             }
             50% {
                 opacity: 1;
-                text-shadow: 0 0 16px rgba(255, 68, 68, 1);
+                text-shadow: 0 0 16px rgba(255, 51, 51, 1);
             }
         }
 
@@ -123,7 +123,6 @@
             max-width: 200px;
             z-index: 30;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-            pointer-events: none;
         }
 
         .info-popup.hidden {
@@ -135,6 +134,7 @@
             margin-bottom: 10px;
             padding-bottom: 10px;
             border-bottom: 1px solid #333;
+            color: #ff6666;
         }
 
         .popup-row {
@@ -252,10 +252,6 @@
                 padding: 16px;
             }
 
-            .header h1 {
-                font-size: 18px;
-            }
-
             .button-group {
                 left: 16px;
                 bottom: 16px;
@@ -295,7 +291,7 @@
         <div class="viewer-wrapper">
             <div class="hint">
                 <strong>12 monitoring points</strong><br>
-                Red = stressed | Click to see details
+                Click any red point for details
             </div>
 
             <div class="stats">
@@ -349,10 +345,9 @@
     </div>
 
     <script>
-        let scene, camera, renderer, mesh, raycaster, mouse;
-        let popup, pointsData = [], labelElements = [];
+        let scene, camera, renderer, raycaster, mouse;
+        let popup, pointsData = [], labelElements = [], pointMeshes = [];
 
-        // Point data with names and NDRE values
         const POINTS = [
             { id: 1, x: 1.0, y: 1.0, z: 0.5, ndre: 0.52, name: 'NW Corner' },
             { id: 2, x: 2.5, y: 2.0, z: 0.5, ndre: 0.48, name: 'W Ridge' },
@@ -387,26 +382,16 @@
             raycaster = new THREE.Raycaster();
             mouse = new THREE.Vector2();
 
-            const light = new THREE.AmbientLight(0xffffff, 0.5);
+            const light = new THREE.AmbientLight(0xffffff, 0.6);
             scene.add(light);
 
             const directional = new THREE.DirectionalLight(0xffffff, 0.8);
             directional.position.set(10, 15, 5);
             scene.add(directional);
 
-            const loader = new THREE.GLTFLoader();
-            loader.load('pointcloud.glb', (gltf) => {
-                mesh = gltf.scene;
-                // Make all meshes red
-                mesh.traverse((child) => {
-                    if (child.isMesh) {
-                        child.material = new THREE.MeshPhongMaterial({ color: 0xff4444 });
-                    }
-                });
-                scene.add(mesh);
-                createLabels();
-                animate();
-            });
+            // Create red spheres for each point
+            createPoints();
+            createLabels();
 
             popup = document.getElementById('popup');
             canvas.addEventListener('click', onCanvasClick);
@@ -414,11 +399,28 @@
             window.addEventListener('resize', onWindowResize);
 
             pointsData = POINTS;
+            animate();
+        }
+
+        function createPoints() {
+            const geometry = new THREE.SphereGeometry(0.15, 16, 16);
+            const material = new THREE.MeshPhongMaterial({
+                color: 0xff3333,
+                emissive: 0xff5555,
+                shininess: 100
+            });
+
+            POINTS.forEach((point, idx) => {
+                const mesh = new THREE.Mesh(geometry, material.clone());
+                mesh.position.set(point.x, point.z, point.y);
+                mesh.userData = { pointData: point, index: idx };
+                scene.add(mesh);
+                pointMeshes.push(mesh);
+            });
         }
 
         function createLabels() {
             const labelsContainer = document.getElementById('labels-container');
-            const canvas = document.getElementById('canvas');
 
             POINTS.forEach((point, idx) => {
                 const label = document.createElement('div');
@@ -431,9 +433,6 @@
                 labelsContainer.appendChild(label);
                 labelElements.push({ element: label, point });
             });
-
-            // Position labels on first render
-            updateLabelPositions();
         }
 
         function updateLabelPositions() {
@@ -442,7 +441,7 @@
             const height = canvas.clientHeight;
 
             labelElements.forEach(({ element, point }) => {
-                const vector = new THREE.Vector3(point.x, point.z + 0.3, point.y);
+                const vector = new THREE.Vector3(point.x, point.z + 0.4, point.y);
                 vector.project(camera);
 
                 const x = (vector.x * 0.5 + 0.5) * width;
@@ -467,36 +466,12 @@
             mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
             raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(pointMeshes);
 
-            if (mesh) {
-                const intersects = raycaster.intersectObject(mesh, true);
-
-                if (intersects.length > 0) {
-                    const point = intersects[0].point;
-                    const closest = findClosestPoint(point);
-
-                    if (closest) {
-                        showPopup(event, closest);
-                    }
-                }
+            if (intersects.length > 0) {
+                const clickedPoint = intersects[0].object.userData.pointData;
+                showPopup(event, clickedPoint);
             }
-        }
-
-        function findClosestPoint(pos) {
-            let closest = null;
-            let minDist = Infinity;
-
-            pointsData.forEach(p => {
-                const dist = Math.sqrt(
-                    Math.pow(pos.x - p.x, 2) + Math.pow(pos.y - p.y, 2)
-                );
-                if (dist < minDist && dist < 1.5) {
-                    minDist = dist;
-                    closest = p;
-                }
-            });
-
-            return closest;
         }
 
         function showPopup(event, point) {
@@ -513,15 +488,14 @@
                 `<span class="${statusClass}">${status}</span>`;
 
             popup.classList.remove('hidden');
-            popup.style.left = (event.clientX + 12) + 'px';
+            popup.style.left = Math.min(event.clientX + 12, window.innerWidth - 220) + 'px';
             popup.style.top = (event.clientY + 12) + 'px';
         }
 
         function onMouseMove(event) {
             if (popup.classList.contains('hidden')) return;
-
             const rect = event.target.getBoundingClientRect();
-            if (event.clientX - rect.left > 300 || event.clientY - rect.top > 300) {
+            if (event.clientX - rect.left > 350 || event.clientY - rect.top > 400) {
                 popup.classList.add('hidden');
             }
         }
@@ -539,9 +513,12 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            if (mesh) {
-                mesh.rotation.z += 0.0003;
-            }
+            // Animate point scaling (pulse effect)
+            pointMeshes.forEach((mesh, idx) => {
+                const time = Date.now() * 0.001 + idx * 0.15;
+                const scale = 1 + Math.sin(time * 2) * 0.2;
+                mesh.scale.set(scale, scale, scale);
+            });
 
             updateLabelPositions();
             renderer.render(scene, camera);
