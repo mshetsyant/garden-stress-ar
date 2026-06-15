@@ -247,6 +247,32 @@
             max-width: 200px;
         }
 
+        .hotspot-info {
+            background: rgba(255, 50, 50, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        model-viewer::part(hotspot-button) {
+            background: #ff3333;
+            border-radius: 50%;
+            border: 2px solid #ff6666;
+            width: 40px;
+            height: 40px;
+            box-shadow: 0 0 12px rgba(255, 51, 51, 0.6);
+            cursor: pointer;
+        }
+
+        model-viewer::part(hotspot-button):hover {
+            background: #ff5555;
+            box-shadow: 0 0 16px rgba(255, 51, 51, 1);
+        }
+
         @media (max-width: 768px) {
             .header {
                 padding: 16px;
@@ -277,6 +303,11 @@
             .point-label {
                 font-size: 10px;
                 padding: 6px 8px;
+            }
+
+            model-viewer::part(hotspot-button) {
+                width: 32px;
+                height: 32px;
             }
         }
     </style>
@@ -334,7 +365,46 @@
                 ar
                 ar-modes="quick-look scene-viewer"
                 scale="1 1 1"
+                camera-controls
+                interaction-prompt="none"
                 style="display:none;">
+                <!-- Hotspots for each point -->
+                <button slot="hotspot-1" data-position="1.0 0.5 1.0" data-normal="0 1 0" onclick="showPointInfo(1)">
+                    <div class="hotspot-info">Point 01</div>
+                </button>
+                <button slot="hotspot-2" data-position="2.5 0.5 2.0" data-normal="0 1 0" onclick="showPointInfo(2)">
+                    <div class="hotspot-info">Point 02</div>
+                </button>
+                <button slot="hotspot-3" data-position="4.0 0.5 1.5" data-normal="0 1 0" onclick="showPointInfo(3)">
+                    <div class="hotspot-info">Point 03</div>
+                </button>
+                <button slot="hotspot-4" data-position="5.0 0.5 5.0" data-normal="0 1 0" onclick="showPointInfo(4)">
+                    <div class="hotspot-info">Point 04</div>
+                </button>
+                <button slot="hotspot-5" data-position="6.5 0.5 3.0" data-normal="0 1 0" onclick="showPointInfo(5)">
+                    <div class="hotspot-info">Point 05</div>
+                </button>
+                <button slot="hotspot-6" data-position="8.0 0.5 7.0" data-normal="0 1 0" onclick="showPointInfo(6)">
+                    <div class="hotspot-info">Point 06</div>
+                </button>
+                <button slot="hotspot-7" data-position="9.0 0.5 8.5" data-normal="0 1 0" onclick="showPointInfo(7)">
+                    <div class="hotspot-info">Point 07</div>
+                </button>
+                <button slot="hotspot-8" data-position="1.5 0.5 7.5" data-normal="0 1 0" onclick="showPointInfo(8)">
+                    <div class="hotspot-info">Point 08</div>
+                </button>
+                <button slot="hotspot-9" data-position="3.0 0.5 8.0" data-normal="0 1 0" onclick="showPointInfo(9)">
+                    <div class="hotspot-info">Point 09</div>
+                </button>
+                <button slot="hotspot-10" data-position="5.5 0.5 9.0" data-normal="0 1 0" onclick="showPointInfo(10)">
+                    <div class="hotspot-info">Point 10</div>
+                </button>
+                <button slot="hotspot-11" data-position="7.5 0.5 5.5" data-normal="0 1 0" onclick="showPointInfo(11)">
+                    <div class="hotspot-info">Point 11</div>
+                </button>
+                <button slot="hotspot-12" data-position="8.5 0.5 2.5" data-normal="0 1 0" onclick="showPointInfo(12)">
+                    <div class="hotspot-info">Point 12</div>
+                </button>
             </model-viewer>
 
             <div class="button-group">
@@ -508,6 +578,27 @@
 
         function launchAR() {
             document.getElementById('arViewer').activateAR();
+        }
+
+        function showPointInfo(pointId) {
+            const point = POINTS[pointId - 1];
+            if (point) {
+                const status = point.ndre < 0.30 ? 'Stressed' :
+                               point.ndre < 0.40 ? 'Warning' : 'Healthy';
+
+                const statusClass = point.ndre < 0.30 ? 'status-stressed' :
+                                    point.ndre < 0.40 ? 'status-warning' : 'status-healthy';
+
+                document.getElementById('popup-id').textContent = `Point ${String(point.id).padStart(2, '0')}`;
+                document.getElementById('popup-pos').textContent = `${point.name}`;
+                document.getElementById('popup-ndre').textContent = point.ndre.toFixed(2);
+                document.getElementById('popup-status').innerHTML =
+                    `<span class="${statusClass}">${status}</span>`;
+
+                popup.classList.remove('hidden');
+                popup.style.left = '24px';
+                popup.style.top = '100px';
+            }
         }
 
         function animate() {
