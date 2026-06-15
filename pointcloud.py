@@ -66,35 +66,29 @@ def generate_garden_point_cloud(lat=40.33105186237493, lon=44.59644202143014, n_
 
 def create_point_cloud_glb(data):
     """
-    Create minimal GLB with small spheres for each monitoring point.
+    Create GLB with bright red spheres for AR visibility.
     """
     x = np.array(data['points']['x'])
     y = np.array(data['points']['y'])
     z = np.array(data['points']['z'])
     ndre = np.array(data['points']['ndre'])
 
-    # Create mesh with tiny spheres
     all_vertices = []
     all_faces = []
     all_colors = []
 
     vertex_offset = 0
-    sphere_radius = 0.08
+    sphere_radius = 0.12  # Slightly larger for AR visibility
 
     for i in range(len(x)):
-        sphere = trimesh.creation.icosphere(subdivisions=0, radius=sphere_radius)
+        sphere = trimesh.creation.icosphere(subdivisions=1, radius=sphere_radius)
 
         sphere.vertices[:, 0] += x[i]
         sphere.vertices[:, 1] += y[i]
         sphere.vertices[:, 2] += z[i]
 
-        # Color gradient based on NDRE (green to red)
-        if ndre[i] < 0.30:
-            color = np.array([255, 60, 60, 255])  # Red - stressed
-        elif ndre[i] < 0.40:
-            color = np.array([255, 180, 60, 255])  # Orange - warning
-        else:
-            color = np.array([100, 220, 100, 255])  # Green - healthy
+        # All RED for AR - bright and visible
+        color = np.array([255, 50, 50, 255])  # Bright red
 
         all_vertices.append(sphere.vertices)
         all_faces.append(sphere.faces + vertex_offset)
@@ -108,6 +102,13 @@ def create_point_cloud_glb(data):
 
     mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
     mesh.visual.vertex_colors = colors
+
+    # Ensure material is exported with the mesh
+    mesh.visual.material = trimesh.visual.material.SimpleMaterial(
+        image=None,
+        diffuse=[255, 50, 50, 255],
+        ambient=[255, 50, 50, 255]
+    )
 
     return mesh
 
