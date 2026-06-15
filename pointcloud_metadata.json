@@ -5,18 +5,12 @@
     "reference_point": "Garden center"
   },
   "stress_zone": {
-    "center": [
-      5.0,
-      5.0,
-      0.5
-    ],
-    "radius": 1.0,
-    "count": 2
+    "count": 2,
+    "healthy_count": 10
   },
   "garden": {
     "width": 10.0,
-    "length": 10.0,
-    "max_height": 3.0
+    "length": 10.0
   },
-  "total_points": 200
+  "total_points": 12
 }

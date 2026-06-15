@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Garden Stress Monitor AR</title>
+    <title>Garden Monitor AR</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
     <style>
@@ -14,9 +14,9 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #0a0a0a;
-            color: #e0e0e0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0f0f0f;
+            color: #e8e8e8;
             overflow: hidden;
         }
 
@@ -27,29 +27,22 @@
         }
 
         .header {
-            background: rgba(0, 0, 0, 0.9);
-            padding: 15px;
-            border-bottom: 2px solid #66bb6a;
+            background: #1a1a1a;
+            padding: 20px;
+            border-bottom: 1px solid #2a2a2a;
             text-align: center;
-            z-index: 10;
         }
 
         .header h1 {
-            font-size: 22px;
-            color: #66bb6a;
-            margin-bottom: 5px;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            letter-spacing: -0.5px;
         }
 
         .header p {
-            font-size: 12px;
-            color: #a0a0a0;
-        }
-
-        .coords {
-            font-size: 11px;
-            color: #4caf50;
-            font-family: monospace;
-            margin-top: 5px;
+            font-size: 13px;
+            color: #888;
         }
 
         .viewer-wrapper {
@@ -68,149 +61,170 @@
             display: none;
         }
 
-        .controls-panel {
+        .info-popup {
             position: absolute;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.9);
-            border: 2px solid #66bb6a;
-            border-radius: 10px;
-            padding: 16px;
-            z-index: 20;
-            max-width: 500px;
-            backdrop-filter: blur(10px);
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 14px;
+            color: #e8e8e8;
+            font-size: 13px;
+            max-width: 200px;
+            z-index: 30;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
         }
 
-        .stat-row {
+        .info-popup.hidden {
+            display: none;
+        }
+
+        .popup-header {
+            font-weight: 600;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+
+        .popup-row {
+            margin: 6px 0;
             display: flex;
             justify-content: space-between;
-            margin-bottom: 10px;
-            font-size: 13px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid rgba(102, 187, 106, 0.2);
+            gap: 12px;
         }
 
-        .stat-row:last-of-type {
-            border-bottom: none;
-            margin-bottom: 0;
+        .popup-label {
+            color: #888;
+        }
+
+        .popup-value {
+            font-weight: 600;
+            color: #fff;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 12px;
+        }
+
+        .status-healthy {
+            color: #66bb6a;
+        }
+
+        .status-warning {
+            color: #ffa500;
+        }
+
+        .status-stressed {
+            color: #ff5252;
+        }
+
+        .button-group {
+            position: absolute;
+            bottom: 24px;
+            left: 24px;
+            display: flex;
+            gap: 12px;
+            z-index: 20;
+        }
+
+        .btn {
+            padding: 12px 16px;
+            border: 1px solid #333;
+            border-radius: 6px;
+            background: #1a1a1a;
+            color: #e8e8e8;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.3px;
+        }
+
+        .btn:hover {
+            background: #222;
+            border-color: #444;
+        }
+
+        .btn-primary {
+            background: #2d7f3f;
+            border-color: #2d7f3f;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #3a9d51;
+            border-color: #3a9d51;
+        }
+
+        .stats {
+            position: absolute;
+            top: 70px;
+            right: 24px;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 6px;
+            padding: 12px 16px;
+            font-size: 12px;
+            z-index: 15;
+        }
+
+        .stat-item {
+            margin: 6px 0;
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
         }
 
         .stat-label {
-            color: #66bb6a;
-            font-weight: 600;
+            color: #888;
         }
 
         .stat-value {
-            color: #e0e0e0;
-            font-family: monospace;
-        }
-
-        .ar-button {
-            width: 100%;
-            padding: 12px;
-            margin-top: 12px;
-            background: linear-gradient(135deg, #66bb6a 0%, #4caf50 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
+            color: #fff;
             font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .ar-button:hover {
-            background: linear-gradient(135deg, #4caf50 0%, #3d8b40 100%);
-            transform: translateY(-2px);
-        }
-
-        .annotation {
-            position: absolute;
-            background: rgba(0, 0, 0, 0.95);
-            border: 2px solid #66bb6a;
-            border-radius: 8px;
-            padding: 12px;
-            color: #e0e0e0;
-            font-size: 12px;
-            max-width: 220px;
-            z-index: 25;
-            pointer-events: none;
-            box-shadow: 0 0 20px rgba(102, 187, 106, 0.3);
-        }
-
-        .annotation-header {
-            color: #66bb6a;
-            font-weight: 600;
-            margin-bottom: 8px;
-            border-bottom: 1px solid #66bb6a;
-            padding-bottom: 6px;
-        }
-
-        .annotation-row {
-            margin: 4px 0;
-            display: flex;
-            justify-content: space-between;
-            gap: 10px;
-        }
-
-        .annotation-label {
-            color: #a0a0a0;
-        }
-
-        .annotation-value {
-            color: #66bb6a;
-            font-family: monospace;
-            font-weight: 600;
-        }
-
-        .close-annotation {
-            position: absolute;
-            top: 4px;
-            right: 8px;
-            background: #66bb6a;
-            color: #000;
-            border: none;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 12px;
         }
 
         .hint {
             position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(102, 187, 106, 0.1);
-            border: 1px solid #66bb6a;
+            top: 70px;
+            left: 24px;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
             border-radius: 6px;
-            padding: 10px 12px;
+            padding: 10px 14px;
             font-size: 12px;
-            color: #66bb6a;
+            color: #888;
             z-index: 15;
-            pointer-events: none;
+            max-width: 200px;
         }
 
         @media (max-width: 768px) {
-            .controls-panel {
-                max-width: 100%;
-                left: 12px;
-                right: 12px;
-                bottom: 12px;
-                padding: 12px;
+            .header {
+                padding: 16px;
             }
 
-            .stat-row {
-                font-size: 12px;
-                margin-bottom: 8px;
+            .header h1 {
+                font-size: 18px;
+            }
+
+            .button-group {
+                left: 16px;
+                bottom: 16px;
+            }
+
+            .stats {
+                right: 16px;
+                top: 66px;
+                font-size: 11px;
             }
 
             .hint {
-                display: none;
+                left: 16px;
+                top: 66px;
+                max-width: 150px;
+            }
+
+            .btn {
+                padding: 10px 14px;
+                font-size: 12px;
             }
         }
     </style>
@@ -218,14 +232,48 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Garden Stress Monitoring</h1>
-            <p>Click points for details • Tap AR button to view in space</p>
-            <div class="coords">📍 40.331°N, 44.596°E (Bulgaria)</div>
+            <h1>Garden Stress Monitor</h1>
+            <p>Click a point to see plant data</p>
         </div>
 
         <div class="viewer-wrapper">
-            <div class="hint">Click on points to see details →</div>
+            <div class="hint">
+                <strong>12 monitoring points</strong><br>
+                Click to inspect each location
+            </div>
+
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-label">Healthy</span>
+                    <span class="stat-value">10</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Stressed</span>
+                    <span class="stat-value">2</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Area</span>
+                    <span class="stat-value">10m²</span>
+                </div>
+            </div>
+
             <canvas id="canvas"></canvas>
+
+            <div id="popup" class="info-popup hidden">
+                <div class="popup-header" id="popup-id">Point 01</div>
+                <div class="popup-row">
+                    <span class="popup-label">Location</span>
+                    <span class="popup-value" id="popup-pos">-</span>
+                </div>
+                <div class="popup-row">
+                    <span class="popup-label">NDRE</span>
+                    <span class="popup-value" id="popup-ndre">-</span>
+                </div>
+                <div class="popup-row">
+                    <span class="popup-label">Status</span>
+                    <span class="popup-value" id="popup-status">-</span>
+                </div>
+            </div>
 
             <model-viewer
                 id="arViewer"
@@ -236,32 +284,16 @@
                 style="display:none;">
             </model-viewer>
 
-            <div class="controls-panel">
-                <div class="stat-row">
-                    <span class="stat-label">Total Points</span>
-                    <span class="stat-value">200</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Stressed Plants</span>
-                    <span class="stat-value">2 detected</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Garden Area</span>
-                    <span class="stat-value">10m × 10m</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Interaction</span>
-                    <span class="stat-value">Click any point</span>
-                </div>
-                <button class="ar-button" onclick="launchAR()">Launch AR Camera</button>
+            <div class="button-group">
+                <button class="btn" onclick="resetView()">Reset</button>
+                <button class="btn btn-primary" onclick="launchAR()">AR View</button>
             </div>
         </div>
     </div>
 
     <script>
         let scene, camera, renderer, mesh, raycaster, mouse;
-        let clickedPoint = null;
-        let annotationDiv = null;
+        let popup, pointsData = [];
 
         function init() {
             const canvas = document.getElementById('canvas');
@@ -269,28 +301,26 @@
             const height = window.innerHeight - 70;
 
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x0a0a0a);
+            scene.background = new THREE.Color(0x0f0f0f);
 
-            camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-            camera.position.set(5, 5, 8);
-            camera.lookAt(5, 5, 1);
+            camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
+            camera.position.set(5, 4, 8);
+            camera.lookAt(5, 0, 5);
 
-            renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
             renderer.setSize(width, height);
             renderer.setPixelRatio(window.devicePixelRatio);
 
             raycaster = new THREE.Raycaster();
             mouse = new THREE.Vector2();
 
-            // Lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambientLight);
+            const light = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(light);
 
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            directionalLight.position.set(5, 10, 5);
-            scene.add(directionalLight);
+            const directional = new THREE.DirectionalLight(0xffffff, 0.8);
+            directional.position.set(10, 15, 5);
+            scene.add(directional);
 
-            // Load GLB
             const loader = new THREE.GLTFLoader();
             loader.load('pointcloud.glb', (gltf) => {
                 mesh = gltf.scene;
@@ -298,9 +328,26 @@
                 animate();
             });
 
-            // Mouse interaction
+            popup = document.getElementById('popup');
             canvas.addEventListener('click', onCanvasClick);
+            canvas.addEventListener('mousemove', onMouseMove);
             window.addEventListener('resize', onWindowResize);
+
+            // Store point data
+            pointsData = [
+                { id: 1, x: 1.0, y: 1.0, ndre: 0.52, name: 'North-West Corner' },
+                { id: 2, x: 2.5, y: 2.0, ndre: 0.48, name: 'West Ridge' },
+                { id: 3, x: 4.0, y: 1.5, ndre: 0.55, name: 'Center-North' },
+                { id: 4, x: 5.0, y: 5.0, ndre: 0.18, name: 'Central Zone' },
+                { id: 5, x: 6.5, y: 3.0, ndre: 0.51, name: 'East Path' },
+                { id: 6, x: 8.0, y: 7.0, ndre: 0.49, name: 'North-East' },
+                { id: 7, x: 9.0, y: 8.5, ndre: 0.54, name: 'Far Corner' },
+                { id: 8, x: 1.5, y: 7.5, ndre: 0.50, name: 'South-West' },
+                { id: 9, x: 3.0, y: 8.0, ndre: 0.53, name: 'South Edge' },
+                { id: 10, x: 5.5, y: 9.0, ndre: 0.15, name: 'South Central' },
+                { id: 11, x: 7.5, y: 5.5, ndre: 0.47, name: 'East Ridge' },
+                { id: 12, x: 8.5, y: 2.5, ndre: 0.56, name: 'Far East' }
+            ];
         }
 
         function onCanvasClick(event) {
@@ -317,87 +364,83 @@
 
                 if (intersects.length > 0) {
                     const point = intersects[0].point;
+                    const closest = findClosestPoint(point);
 
-                    // Determine stress based on position (mock data)
-                    const distToStress = Math.sqrt(
-                        Math.pow(point.x - 5, 2) +
-                        Math.pow(point.y - 5, 2) +
-                        Math.pow(point.z - 0.5, 2)
-                    );
-
-                    const isStressed = distToStress < 1.0;
-                    const ndre = isStressed ?
-                        (0.1 + Math.random() * 0.15).toFixed(2) :
-                        (0.4 + Math.random() * 0.2).toFixed(2);
-
-                    showAnnotation(event, point, ndre, isStressed);
+                    if (closest) {
+                        showPopup(event, closest);
+                    }
                 }
             }
         }
 
-        function showAnnotation(event, point, ndre, isStressed) {
-            // Remove old annotation
-            if (annotationDiv) {
-                annotationDiv.remove();
-            }
+        function findClosestPoint(pos) {
+            let closest = null;
+            let minDist = Infinity;
 
-            annotationDiv = document.createElement('div');
-            annotationDiv.className = 'annotation';
-            annotationDiv.style.left = (event.clientX + 10) + 'px';
-            annotationDiv.style.top = (event.clientY - 10) + 'px';
-
-            annotationDiv.innerHTML = `
-                <div class="annotation-header">Plant Data</div>
-                <div class="annotation-row">
-                    <span class="annotation-label">Position</span>
-                    <span class="annotation-value">${point.x.toFixed(1)}m</span>
-                </div>
-                <div class="annotation-row">
-                    <span class="annotation-label">NDRE Index</span>
-                    <span class="annotation-value">${ndre}</span>
-                </div>
-                <div class="annotation-row">
-                    <span class="annotation-label">Status</span>
-                    <span class="annotation-value">${isStressed ? '🔴 Stressed' : '🟢 Healthy'}</span>
-                </div>
-                <button class="close-annotation" onclick="this.parentElement.remove()">×</button>
-            `;
-
-            document.body.appendChild(annotationDiv);
-
-            // Auto-close after 5 seconds
-            setTimeout(() => {
-                if (annotationDiv && annotationDiv.parentElement) {
-                    annotationDiv.remove();
+            pointsData.forEach(p => {
+                const dist = Math.sqrt(
+                    Math.pow(pos.x - p.x, 2) + Math.pow(pos.y - p.y, 2)
+                );
+                if (dist < minDist && dist < 1.5) {
+                    minDist = dist;
+                    closest = p;
                 }
-            }, 5000);
+            });
+
+            return closest;
+        }
+
+        function showPopup(event, point) {
+            const status = point.ndre < 0.30 ? 'Stressed' :
+                           point.ndre < 0.40 ? 'Warning' : 'Healthy';
+
+            const statusClass = point.ndre < 0.30 ? 'status-stressed' :
+                                point.ndre < 0.40 ? 'status-warning' : 'status-healthy';
+
+            document.getElementById('popup-id').textContent = `Point ${String(point.id).padStart(2, '0')}`;
+            document.getElementById('popup-pos').textContent = `${point.name}`;
+            document.getElementById('popup-ndre').textContent = point.ndre.toFixed(2);
+            document.getElementById('popup-status').innerHTML =
+                `<span class="${statusClass}">${status}</span>`;
+
+            popup.classList.remove('hidden');
+            popup.style.left = (event.clientX + 12) + 'px';
+            popup.style.top = (event.clientY + 12) + 'px';
+        }
+
+        function onMouseMove(event) {
+            if (popup.classList.contains('hidden')) return;
+
+            const rect = event.target.getBoundingClientRect();
+            if (event.clientX - rect.left > 300 || event.clientY - rect.top > 300) {
+                popup.classList.add('hidden');
+            }
+        }
+
+        function resetView() {
+            camera.position.set(5, 4, 8);
+            camera.lookAt(5, 0, 5);
+            popup.classList.add('hidden');
+        }
+
+        function launchAR() {
+            document.getElementById('arViewer').activateAR();
         }
 
         function animate() {
             requestAnimationFrame(animate);
-
             if (mesh) {
-                mesh.rotation.x += 0.0005;
-                mesh.rotation.y += 0.001;
+                mesh.rotation.z += 0.0003;
             }
-
             renderer.render(scene, camera);
         }
 
         function onWindowResize() {
             const width = window.innerWidth;
             const height = window.innerHeight - 70;
-
             camera.aspect = width / height;
             camera.updateProjectionMatrix();
             renderer.setSize(width, height);
-        }
-
-        function launchAR() {
-            const viewer = document.getElementById('arViewer');
-            if (viewer) {
-                viewer.activateAR();
-            }
         }
 
         init();
