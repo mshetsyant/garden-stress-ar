@@ -1,0 +1,10 @@
+*.pyc
+__pycache__/
+.DS_Store
+node_modules/
+.env
+*.log
+tunnel_output.txt
+ngrok_output.log
+cloudflare_tunnel.log
+tunnel_url.txt

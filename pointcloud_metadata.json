@@ -1,0 +1,22 @@
+{
+  "coordinates": {
+    "latitude": 40.33105186237493,
+    "longitude": 44.59644202143014,
+    "reference_point": "Garden center"
+  },
+  "stress_zone": {
+    "center": [
+      5.0,
+      5.0,
+      0.5
+    ],
+    "radius": 1.0,
+    "count": 131
+  },
+  "garden": {
+    "width": 10.0,
+    "length": 10.0,
+    "max_height": 3.0
+  },
+  "total_points": 10000
+}

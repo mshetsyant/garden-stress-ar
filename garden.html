@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garden Stress Monitor AR</title>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a4d1a 0%, #0d2d0d 100%);
+            color: #e0e0e0;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-bottom: 2px solid #66bb6a;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            color: #66bb6a;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .header p {
+            font-size: 12px;
+            color: #a0a0a0;
+        }
+
+        .coords {
+            font-size: 11px;
+            color: #4caf50;
+            font-family: monospace;
+            margin-top: 5px;
+        }
+
+        .viewer-wrapper {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        model-viewer {
+            width: 100%;
+            height: 100%;
+        }
+
+        .panel {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #66bb6a;
+            border-radius: 10px;
+            padding: 16px;
+            z-index: 20;
+            max-width: 500px;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 13px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(102, 187, 106, 0.2);
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .stat-label {
+            color: #66bb6a;
+            font-weight: 600;
+            min-width: 130px;
+        }
+
+        .stat-value {
+            color: #e0e0e0;
+            text-align: right;
+            font-family: monospace;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(102, 187, 106, 0.2);
+            font-size: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .legend-green {
+            background-color: #64c864;
+        }
+
+        .legend-red {
+            background-color: #ff3232;
+        }
+
+        .ar-button {
+            width: 100%;
+            padding: 14px;
+            margin-top: 12px;
+            background: linear-gradient(135deg, #66bb6a 0%, #4caf50 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(102, 187, 106, 0.4);
+        }
+
+        .ar-button:hover {
+            background: linear-gradient(135deg, #4caf50 0%, #3d8b40 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 187, 106, 0.6);
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 5;
+        }
+
+        .spinner {
+            border: 4px solid rgba(102, 187, 106, 0.2);
+            border-top: 4px solid #66bb6a;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 18px;
+            }
+
+            .panel {
+                max-width: 100%;
+                left: 12px;
+                right: 12px;
+                bottom: 12px;
+            }
+
+            .stat-row {
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .stat-label {
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Garden Stress Monitoring</h1>
+            <p>Point Cloud AR Visualization</p>
+            <div class="coords">📍 40.331°N, 44.596°E (Bulgaria)</div>
+        </div>
+
+        <div class="viewer-wrapper">
+            <model-viewer
+                id="model"
+                src="pointcloud.glb"
+                ar
+                ar-modes="quick-look scene-viewer"
+                camera-controls
+                auto-rotate
+                scale="1 1 1"
+                style="background-color: #0a0a0a;">
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Loading point cloud...</p>
+                </div>
+            </model-viewer>
+
+            <div class="panel">
+                <div class="stat-row">
+                    <span class="stat-label">Total Points</span>
+                    <span class="stat-value">10,000</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Stressed Plants</span>
+                    <span class="stat-value">131 detected</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Garden Area</span>
+                    <span class="stat-value">10m × 10m</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Stress Radius</span>
+                    <span class="stat-value">1.0m (center)</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Canopy Height</span>
+                    <span class="stat-value">0-3m</span>
+                </div>
+
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-dot legend-green"></div>
+                        <span>Healthy NDRE: 0.4-0.6</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot legend-red"></div>
+                        <span>Stressed NDRE: 0.1-0.25</span>
+                    </div>
+                </div>
+
+                <button class="ar-button" onclick="launchAR()">Launch AR Camera</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const modelViewer = document.querySelector('model-viewer');
+        const loading = document.getElementById('loading');
+
+        modelViewer.addEventListener('load', () => {
+            loading.style.display = 'none';
+        });
+
+        modelViewer.addEventListener('error', (event) => {
+            console.error('Model load error:', event);
+            loading.innerHTML = '<p style="color: #ff6b6b;">Error loading point cloud</p>';
+        });
+
+        function launchAR() {
+            modelViewer.activateAR();
+        }
+
+        console.log('Garden Stress Monitor - Point Cloud AR');
+        console.log({
+            coordinates: '40.331°N, 44.596°E',
+            model: 'pointcloud.glb',
+            points: 10000,
+            stressed: 131,
+            resolution: '10m x 10m x 3m'
+        });
+    </script>
+</body>
+</html>
